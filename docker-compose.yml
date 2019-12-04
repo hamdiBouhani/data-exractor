@@ -1,0 +1,96 @@
+version: "3"
+services:
+  zookeeper:
+    image: debezium/zookeeper:0.9
+    ports:
+     - 2181:2181
+     - 2888:2888
+     - 3888:3888
+  kafka:
+    image: debezium/kafka:0.9
+    ports:
+     - 9092:9092
+    links:
+     - zookeeper
+    environment:
+     - ZOOKEEPER_CONNECT=zookeeper:2181
+  postgres:
+    image: debezium/example-postgres:0.9
+    ports:
+     - 5000:5432
+    environment:
+     - POSTGRES_USER=postgres
+     - POSTGRES_PASSWORD=postgres
+  connect:
+    image: debezium/connect:0.9
+    ports:
+     - 8083:8083
+    links:
+     - kafka
+     - postgres
+    environment:
+     - BOOTSTRAP_SERVERS=kafka:9092
+     - GROUP_ID=1
+     - CONFIG_STORAGE_TOPIC=my_connect_configs
+     - OFFSET_STORAGE_TOPIC=my_connect_offsets
+     - STATUS_STORAGE_TOPIC=my_connect_statuses 
+  connector_producer:
+    build:
+      dockerfile: Dockerfile.dev
+      context: .
+    command: >
+      go run /go/src/gitlab.com/target-digital-transformation/sm-connector-be/cmd/main.go start 
+      --address ':8080'
+      --brokers 'kafka:9092'
+      --topic 'my_connect_statuses'
+    volumes:
+      - $GOPATH/src/gitlab.com/target-digital-transformation/sm-connector-be:/go/src/gitlab.com/target-digital-transformation/sm-connector-be
+    ports:
+      - 8080:8080
+    depends_on:
+      - kafka
+  connector_c1:
+    build:
+      dockerfile: Dockerfile.dev
+      context: .
+    command: >
+      go run /go/src/gitlab.com/target-digital-transformation/sm-connector-be/cmd/main.go consumer 
+      --address ':8081' 
+      --brokers 'kafka:9092' 
+      --topic 'my_connect_configs'
+    volumes:
+      - $GOPATH/src/gitlab.com/target-digital-transformation/sm-connector-be:/go/src/gitlab.com/target-digital-transformation/sm-connector-be
+    ports:
+      - 8081:8081
+    depends_on:
+      - kafka
+  connector_c2:
+    build:
+      dockerfile: Dockerfile.dev
+      context: .
+    command: >
+     go run /go/src/gitlab.com/target-digital-transformation/sm-connector-be/cmd/main.go consumer 
+     --address ':8082' 
+     --brokers 'kafka:9092' 
+     --topic 'my_connect_offsets'
+    volumes:
+      - $GOPATH/src/gitlab.com/target-digital-transformation/sm-connector-be:/go/src/gitlab.com/target-digital-transformation/sm-connector-be
+    ports:
+      - 8082:8082
+    depends_on:
+      - kafka
+  connector_c3:
+    build:
+      dockerfile: Dockerfile.dev
+      context: .
+    command: >
+     go run /go/src/gitlab.com/target-digital-transformation/sm-connector-be/cmd/main.go consumer 
+     --address ':8083' 
+     --brokers 'kafka:9092' 
+     --topic 'my_connect_statuses'
+    volumes:
+      - $GOPATH/src/gitlab.com/target-digital-transformation/sm-connector-be:/go/src/gitlab.com/target-digital-transformation/sm-connector-be
+    ports:
+      - 8083:8083
+    depends_on:
+      - kafka

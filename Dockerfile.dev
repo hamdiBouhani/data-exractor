@@ -1,0 +1,39 @@
+FROM golang:1.12.3
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    g++ \
+    gcc \
+    libc6-dev \
+    make \
+    pkg-config \
+    wget \
+    ca-certificates \
+    unzip \
+    git
+
+ENV GOPATH /go
+
+## begin to install protoc
+RUN set -eux; \
+    # install protoc binaries
+    wget -O protoc.zip https://github.com/google/protobuf/releases/download/v3.4.0/protoc-3.4.0-linux-x86_64.zip; \
+    unzip protoc.zip -d /usr/local; \
+    rm protoc.zip;
+RUN go get github.com/gogo/protobuf/...
+
+## build migrate
+RUN go get -u -d github.com/mattes/migrate/cli github.com/lib/pq github.com/cockroachdb/cockroach-go/crdb
+RUN go build -tags 'postgres cockroachdb' -o /go/bin/migrate github.com/mattes/migrate/cli
+
+
+## get goimports
+RUN mkdir -p $GOPATH/src/golang.org/x/; \ 
+    cd $GOPATH/src/golang.org/x/; \
+    git clone https://github.com/golang/tools.git; \
+    go install golang.org/x/tools/cmd/goimports;
+#RUN go get     golang.org/x/tools/cmd/goimports
+
+
+RUN go get -u github.com/pseudomuto/protoc-gen-doc/cmd/protoc-gen-doc
+
+WORKDIR $GOPATH/src/gitlab.com/target-digital-transformation/sm-connector-be

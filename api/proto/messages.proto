@@ -1,0 +1,38 @@
+syntax = "proto3";
+package pb;
+option go_package = "pb";
+option java_multiple_files = true;
+option java_generic_services = true;
+option java_package = "com.target.message.grpc";
+option java_outer_classname = "MessageProto";
+
+service Message {
+    // Ping is the service alive.
+    rpc Ping (PingRequest) returns (PongResponse) {}
+
+    // method used to emit the message content
+    rpc GetMessage (GetMessageRequest) returns (GetMessageResponse) {}
+}
+// ping is the service alive.
+message PingRequest { string ping = 1; }
+message PongResponse { string pong = 1; }
+
+message Channel{
+    string id = 1;
+    string type = 2;
+}
+
+message JwtUser {
+    string sub = 1;
+    string name = 2;
+    string email = 3;
+}
+// identify the get message request variable
+message GetMessageRequest{
+    string content = 1;
+    string messageId = 2;
+    Channel channel = 3;
+    JwtUser sendTo = 4;
+}
+
+message GetMessageResponse{}
