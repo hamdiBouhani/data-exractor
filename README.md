@@ -1,4 +1,4 @@
-# Smart Connector be 
+# data exractor 
 > to run project run :
 ``` go run cmd/main.go start --brokers ":9092" --topic=testTopic ``` 
 
